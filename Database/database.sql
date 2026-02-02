@@ -13,16 +13,16 @@ CREATE TABLE role (
 );
 
 -- ================================
--- USER TABLE
+-- SYSTEM USER TABLE
 -- ================================
-CREATE TABLE user (
+CREATE TABLE system_user (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     role_id INT NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(20),
     password_hash VARCHAR(255) NOT NULL,
-    status VARCHAR(20) DEFAULT 'ACTIVE',
+    status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
 
     FOREIGN KEY (role_id) REFERENCES role(role_id)
 );
@@ -36,9 +36,9 @@ CREATE TABLE property (
     property_name VARCHAR(100) NOT NULL,
     location VARCHAR(150) NOT NULL,
     property_type VARCHAR(50),
-    status VARCHAR(20) DEFAULT 'ACTIVE',
+    status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
 
-    FOREIGN KEY (user_id) REFERENCES user(user_id)
+    FOREIGN KEY (user_id) REFERENCES system_user(user_id)
 );
 
 -- ================================
@@ -49,9 +49,10 @@ CREATE TABLE unit (
     property_id INT NOT NULL,
     unit_number VARCHAR(50) NOT NULL,
     rent_amount DECIMAL(10,2) NOT NULL,
-    occupancy_status VARCHAR(20) DEFAULT 'VACANT',
+    occupancy_status ENUM('VACANT','OCCUPIED') DEFAULT 'VACANT',
 
-    FOREIGN KEY (property_id) REFERENCES property(property_id)
+    FOREIGN KEY (property_id) REFERENCES property(property_id),
+    UNIQUE (property_id, unit_number)
 );
 
 -- ================================
@@ -63,7 +64,7 @@ CREATE TABLE tenant (
     national_id VARCHAR(50) UNIQUE NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
-    status VARCHAR(20) DEFAULT 'ACTIVE'
+    status ENUM('ACTIVE','INACTIVE','BLACKLISTED') DEFAULT 'ACTIVE'
 );
 
 -- ================================
@@ -75,7 +76,7 @@ CREATE TABLE lease (
     unit_id INT NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    lease_status VARCHAR(20) DEFAULT 'ACTIVE',
+    lease_status ENUM('ACTIVE','TERMINATED','EXPIRED') DEFAULT 'ACTIVE',
 
     FOREIGN KEY (tenant_id) REFERENCES tenant(tenant_id),
     FOREIGN KEY (unit_id) REFERENCES unit(unit_id)
@@ -90,7 +91,7 @@ CREATE TABLE invoice (
     billing_month VARCHAR(20) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     due_date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'PENDING',
+    status ENUM('PENDING','PAID','OVERDUE') DEFAULT 'PENDING',
 
     FOREIGN KEY (lease_id) REFERENCES lease(lease_id)
 );
@@ -115,14 +116,15 @@ CREATE TABLE payment (
 CREATE TABLE maintenance (
     maintenance_id INT AUTO_INCREMENT PRIMARY KEY,
     unit_id INT NOT NULL,
-    reported_by VARCHAR(50),
+    reported_by INT,
     issue_description TEXT NOT NULL,
-    status VARCHAR(20) DEFAULT 'OPEN',
+    status ENUM('OPEN','IN_PROGRESS','RESOLVED') DEFAULT 'OPEN',
     cost DECIMAL(10,2),
     reported_date DATE NOT NULL,
     resolved_date DATE,
 
-    FOREIGN KEY (unit_id) REFERENCES unit(unit_id)
+    FOREIGN KEY (unit_id) REFERENCES unit(unit_id),
+    FOREIGN KEY (reported_by) REFERENCES system_user(user_id)
 );
 
 -- ================================
@@ -135,7 +137,7 @@ CREATE TABLE notification (
     notification_type VARCHAR(50),
     sent_date DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id) REFERENCES user(user_id)
+    FOREIGN KEY (user_id) REFERENCES system_user(user_id)
 );
 
 -- ================================
